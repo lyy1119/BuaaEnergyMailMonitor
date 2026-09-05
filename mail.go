@@ -54,6 +54,12 @@ func sendAlertMail(tos []string, subject string, body string) error {
 		}
 	}
 
+	// smtpFrom 会被用作 SMTP 封套的 MAIL FROM 地址，必须是合法完整的邮箱地址
+	// （形如 user@example.com）。若填昵称/纯字符串，服务器会返回 500 bad syntax。
+	if !validEmail(smtpFrom) {
+		return fmt.Errorf("config.go 中 smtpFrom（当前值 %q）不是合法的邮箱地址：请填写类似 user@example.com 的完整邮箱（昵称、纯字符串会被 SMTP 服务器拒绝，报 500 bad syntax）", smtpFrom)
+	}
+
 	addr := net.JoinHostPort(smtpServer, smtpPort)
 	auths, err := smtpAuths(addr, smtpServer, smtpUser, smtpPass)
 	if err != nil {
