@@ -1,0 +1,9 @@
+# 编译产物
+/buaaenergy
+*.exe
+
+# 本地 Go 工具链与缓存（.tools/ 下含下载的 go1.27.1，约 374MB）
+/.tools/
+
+# 运行时输出
+*.log
