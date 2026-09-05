@@ -20,7 +20,7 @@ import (
 // 输入参数依次为：id、name、threshold、current。
 // 整段内容只用一个 fmt.Sprintf 生成，需要定制邮件文案时改这一行即可。
 func alertItemContent(id, name string, threshold, current float64) string {
-	return fmt.Sprintf("告警：%s（id=%s）当前值 %g，低于阈值 %g\n", name, id, current, threshold)
+	return fmt.Sprintf("电表 %s（%s）还剩 %g 度，低于阈值 %g 度，请及时充值电费。\n", name, id, current, threshold)
 }
 
 // sendAlertMail 向多个收件人发送告警邮件：正文 body 由主逻辑（main.go）拼装，
@@ -28,7 +28,7 @@ func alertItemContent(id, name string, threshold, current float64) string {
 // lowCount 为低于阈值的项数（保留参数，便于调用方扩展主题/正文时使用）。
 // 每个收件人单独发送一封邮件，一个收件人失败不影响其他收件人；
 // 全部失败时返回错误，部分失败时在 stderr 打印失败明细并返回 nil。
-func sendAlertMail(tos []string, subject string, lowCount int, body string) error {
+func sendAlertMail(tos []string, subject string, body string) error {
 	// 收件人预处理：去空、去占位符地址
 	var targets []string
 	for _, t := range tos {
