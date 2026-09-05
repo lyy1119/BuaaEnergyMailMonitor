@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"net/smtp"
+	"os"
 	"strings"
 	"time"
 )
@@ -22,12 +23,23 @@ func alertItemContent(id, name string, threshold, current float64) string {
 	return fmt.Sprintf("告警：%s（id=%s）当前值 %g，低于阈值 %g\n", name, id, current, threshold)
 }
 
-// sendAlertMail 发送告警邮件：正文 body 由主逻辑（main.go）拼装，
-// 末尾已含“请勿回复”声明；lowCount 为低于阈值的项数，用于生成主题。
-func sendAlertMail(to string, subject string, lowCount int, body string) error {
-	to = strings.TrimSpace(to)
-	if to == "" || strings.ContainsAny(to, "<>") {
-		return fmt.Errorf("未配置收件人：请用 -to 参数指定，或修改 config.go 中的 defaultTo（当前值 %q）", to)
+// sendAlertMail 向多个收件人发送告警邮件：正文 body 由主逻辑（main.go）拼装，
+// 末尾已含“请勿回复”声明；subject 为邮件主题（由主逻辑指定）；
+// lowCount 为低于阈值的项数（保留参数，便于调用方扩展主题/正文时使用）。
+// 每个收件人单独发送一封邮件，一个收件人失败不影响其他收件人；
+// 全部失败时返回错误，部分失败时在 stderr 打印失败明细并返回 nil。
+func sendAlertMail(tos []string, subject string, lowCount int, body string) error {
+	// 收件人预处理：去空、去占位符地址
+	var targets []string
+	for _, t := range tos {
+		t = strings.TrimSpace(t)
+		if t == "" || strings.ContainsAny(t, "<>") {
+			continue
+		}
+		targets = append(targets, t)
+	}
+	if len(targets) == 0 {
+		return fmt.Errorf("没有有效的收件人地址：请用 -to 指定（可多个），或修改 config.go 中的 defaultTo")
 	}
 	// 防呆：若仍为尖括号占位符，说明使用者尚未替换 config.go，拒绝发信
 	for _, cfg := range []struct{ name, val string }{
@@ -42,21 +54,39 @@ func sendAlertMail(to string, subject string, lowCount int, body string) error {
 	}
 
 	addr := net.JoinHostPort(smtpServer, smtpPort)
-	msg := buildMessage(smtpFrom, to, subject, body)
-
 	auths, err := smtpAuths(addr, smtpServer, smtpUser, smtpPass)
 	if err != nil {
 		return fmt.Errorf("SMTP 探测失败: %w", err)
 	}
-	var lastErr error
-	for _, a := range auths {
-		if err := sendOnce(addr, smtpServer, smtpFrom, to, msg, a); err == nil {
-			return nil
+
+	sent := 0
+	var failures []string
+	for _, to := range targets {
+		msg := buildMessage(smtpFrom, to, subject, body)
+		var lastErr error
+		ok := false
+		for _, a := range auths {
+			if err := sendOnce(addr, smtpServer, smtpFrom, to, msg, a); err == nil {
+				ok = true
+				break
+			} else {
+				lastErr = err
+			}
+		}
+		if ok {
+			sent++
 		} else {
-			lastErr = err
+			failures = append(failures, fmt.Sprintf("%s: %v", to, lastErr))
 		}
 	}
-	return fmt.Errorf("所有认证方式均失败: %w", lastErr)
+
+	if sent == 0 {
+		return fmt.Errorf("所有收件人发送均失败: %s", strings.Join(failures, "；"))
+	}
+	if len(failures) > 0 {
+		fmt.Fprintf(os.Stderr, "部分收件人发送失败（成功 %d/%d）: %s\n", sent, len(targets), strings.Join(failures, "；"))
+	}
+	return nil
 }
 
 // buildMessage 组装符合 RFC5322 的邮件原文（CRLF 换行，中文主题用 RFC2047 编码）。

@@ -8,8 +8,8 @@
 #   make vet        # 静态检查
 #   make clean      # 删除编译产物
 #
-# 示例:
-#   make run ARGS="-to alert@example.com 00001 一号电表 50 00002 二号电表 40"
+# 示例（-to 放末尾，可多个收件人）:
+#   make run ARGS="00001 一号电表 50 00002 二号电表 40 -to alert@example.com ops@example.com"
 
 GO     ?= go
 BINARY := buaaenergy
