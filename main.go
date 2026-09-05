@@ -80,7 +80,7 @@ func main() {
 
 	// 确认需要发送后，在末尾追加“请勿回复”声明，再发送邮件
 	body.WriteString("\n——————————————\n本邮件由 BUAA 能耗监控程序自动发送，请勿直接回复。\n")
-	if err := sendAlertMail(*to, lowCount, body.String()); err != nil {
+	if err := sendAlertMail(*to, "电表电量过低提醒", lowCount, body.String()); err != nil {
 		fmt.Fprintf(os.Stderr, "发送告警邮件失败: %v\n", err)
 		os.Exit(1)
 	}

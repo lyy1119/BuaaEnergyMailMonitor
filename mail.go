@@ -24,7 +24,7 @@ func alertItemContent(id, name string, threshold, current float64) string {
 
 // sendAlertMail 发送告警邮件：正文 body 由主逻辑（main.go）拼装，
 // 末尾已含“请勿回复”声明；lowCount 为低于阈值的项数，用于生成主题。
-func sendAlertMail(to string, lowCount int, body string) error {
+func sendAlertMail(to string, subject string, lowCount int, body string) error {
 	to = strings.TrimSpace(to)
 	if to == "" || strings.ContainsAny(to, "<>") {
 		return fmt.Errorf("未配置收件人：请用 -to 参数指定，或修改 config.go 中的 defaultTo（当前值 %q）", to)
@@ -41,7 +41,6 @@ func sendAlertMail(to string, lowCount int, body string) error {
 		}
 	}
 
-	subject := fmt.Sprintf("【能耗监控】%d 项指标低于阈值", lowCount)
 	addr := net.JoinHostPort(smtpServer, smtpPort)
 	msg := buildMessage(smtpFrom, to, subject, body)
 
