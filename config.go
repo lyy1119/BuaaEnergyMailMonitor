@@ -22,8 +22,11 @@ const (
 	// 发信邮箱密码/授权码（占位符示例：<password>）
 	smtpPass = "<password>"
 
-	// 发件人地址：通常与用户名相同，可单独修改
-	smtpFrom = "<username>"
+	// 发件人地址：默认与邮箱用户名保持一致（多数邮箱要求发件人 = 认证账号），
+	// 由 smtpUser 自动派生，无需单独填写——避免漏改占位符导致服务器报
+	// 500 bad syntax（MAIL FROM 命令非法）。确实需要不同发件人时才取消下行别名，
+	// 改为显式赋值，例如 smtpFrom = "<发件人地址@example.com>"。
+	smtpFrom = smtpUser
 
 	// 默认收件人地址（可用命令行 -to 参数覆盖）
 	defaultTo = "<recipient@example.com>"

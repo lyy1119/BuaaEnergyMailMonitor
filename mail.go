@@ -47,9 +47,10 @@ func sendAlertMail(tos []string, subject string, body string) error {
 		{"smtpPort", smtpPort},
 		{"smtpUser", smtpUser},
 		{"smtpPass", smtpPass},
+		{"smtpFrom", smtpFrom},
 	} {
 		if strings.ContainsAny(cfg.val, "<>") {
-			return fmt.Errorf("config.go 中 %s 仍为占位符 %q：请替换为真实值（服务器/端口/邮箱用户名/密码）后重新编译", cfg.name, cfg.val)
+			return fmt.Errorf("config.go 中 %s 仍为占位符 %q：请替换为真实值（服务器/端口/邮箱用户名/密码/发件人）后重新编译", cfg.name, cfg.val)
 		}
 	}
 
